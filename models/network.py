@@ -9,10 +9,10 @@ from collections import OrderedDict
 from models.base_model import resnet50
 
 class Network(pl.LightningModule):
-    def __init__(self, num_classes, criterion, norm_layer, pretrained_model=None):
+    def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(Network, self).__init__()
-        self.branch1 = SingleNetwork(num_classes, criterion, norm_layer, pretrained_model)
-        self.branch2 = SingleNetwork(num_classes, criterion, norm_layer, pretrained_model)
+        self.branch1 = SingleNetwork(num_classes, norm_layer, pretrained_model)
+        self.branch2 = SingleNetwork(num_classes, norm_layer, pretrained_model)
 
     def forward(self, data, step=1):
         if not self.training:
@@ -25,7 +25,7 @@ class Network(pl.LightningModule):
             return self.branch2(data)
 
 class SingleNetwork(pl.LightningModule):
-    def __init__(self, num_classes, criterion, norm_layer, pretrained_model=None):
+    def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(SingleNetwork, self).__init__()
         self.backbone = resnet50(pretrained_model, norm_layer=norm_layer,
                                   bn_eps=1e-5,
@@ -39,7 +39,6 @@ class SingleNetwork(pl.LightningModule):
         self.head = Head(num_classes, norm_layer, 0.1)
         self.business_layer = []
         self.business_layer.append(self.head)
-        self.criterion = criterion
 
         self.classifier = nn.Conv2d(256, num_classes, kernel_size=1, bias=True)
         self.business_layer.append(self.classifier)
@@ -143,7 +142,9 @@ class ASPP(pl.LightningModule):
 
             pool = nn.functional.avg_pool2d(x, pooling_size, stride=1)
             pool = nn.functional.pad(pool, pad=padding, mode="replicate")
-        return pool# encoding: utf-8
+        return pool
+        
+# encoding: utf-8
 
 import torch
 import torch.nn as nn
@@ -154,10 +155,10 @@ from collections import OrderedDict
 from models.base_model import resnet50
 
 class Network(pl.LightningModule):
-    def __init__(self, num_classes, criterion, norm_layer, pretrained_model=None):
+    def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(Network, self).__init__()
-        self.branch1 = SingleNetwork(num_classes, criterion, norm_layer, pretrained_model)
-        self.branch2 = SingleNetwork(num_classes, criterion, norm_layer, pretrained_model)
+        self.branch1 = SingleNetwork(num_classes, norm_layer, pretrained_model)
+        self.branch2 = SingleNetwork(num_classes, norm_layer, pretrained_model)
 
     def forward(self, data, step=1):
         if not self.training:
@@ -170,7 +171,7 @@ class Network(pl.LightningModule):
             return self.branch2(data)
 
 class SingleNetwork(pl.LightningModule):
-    def __init__(self, num_classes, criterion, norm_layer, pretrained_model=None):
+    def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(SingleNetwork, self).__init__()
         self.backbone = resnet50(pretrained_model, norm_layer=norm_layer,
                                   bn_eps=1e-5,
@@ -184,7 +185,6 @@ class SingleNetwork(pl.LightningModule):
         self.head = Head(num_classes, norm_layer, 0.1)
         self.business_layer = []
         self.business_layer.append(self.head)
-        self.criterion = criterion
 
         self.classifier = nn.Conv2d(256, num_classes, kernel_size=1, bias=True)
         self.business_layer.append(self.classifier)
@@ -296,10 +296,10 @@ from collections import OrderedDict
 from models.base_model import resnet50
 
 class Network(pl.LightningModule):
-    def __init__(self, num_classes, criterion, norm_layer, pretrained_model=None):
+    def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(Network, self).__init__()
-        self.branch1 = SingleNetwork(num_classes, criterion, norm_layer, pretrained_model)
-        self.branch2 = SingleNetwork(num_classes, criterion, norm_layer, pretrained_model)
+        self.branch1 = SingleNetwork(num_classes, norm_layer, pretrained_model)
+        self.branch2 = SingleNetwork(num_classes, norm_layer, pretrained_model)
 
     def forward(self, data, step=1):
         if not self.training:
@@ -312,7 +312,7 @@ class Network(pl.LightningModule):
             return self.branch2(data)
 
 class SingleNetwork(pl.LightningModule):
-    def __init__(self, num_classes, criterion, norm_layer, pretrained_model=None):
+    def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(SingleNetwork, self).__init__()
         self.backbone = resnet50(pretrained_model, norm_layer=norm_layer,
                                   bn_eps=1e-5,
@@ -326,7 +326,6 @@ class SingleNetwork(pl.LightningModule):
         self.head = Head(num_classes, norm_layer, 0.1)
         self.business_layer = []
         self.business_layer.append(self.head)
-        self.criterion = criterion
 
         self.classifier = nn.Conv2d(256, num_classes, kernel_size=1, bias=True)
         self.business_layer.append(self.classifier)

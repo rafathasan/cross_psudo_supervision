@@ -1,44 +1,39 @@
 import argparse
+import wandb
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-from data.BDDataModule import BDDataModule
 from models.TSS import TSS
-from pytorch_lightning.callbacks import ModelCheckpoint
+from torchsummary import summary
+import torch
+import argparse
+import os
+from utils import DatasetDownloader, Config
+from datasets import BingRGB
 
-model = TSS()
-data_module = BDDataModule(3)
+config = Config("./config/config.yaml")
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-c','--ckpt_path', type=str, help='Path to checkpoint file', default=None)
+parser.add_argument('--init_weight_lr', type=float, help='The value for init_weight_lr.', default=1e-5)
+parser.add_argument('--init_weight_momentum', type=float, help='The value for init_weight_momentum.', default=0.9)
+parser.add_argument('--lr', type=float, help='The value for lr.', default=.0025)
+args = parser.parse_args()
 
-logger = TensorBoardLogger('logs/', name='my_experiment')
-logger2 = CSVLogger("logs", name="my_exp_name")
-# ddp_plugin = DDPPlugin(find_unused_parameters=False)
+data_module = BingRGB(**config.datasets_config)
 
-save_dir = "/src/outputs/"
+model = TSS(lr=args.lr, init_weight_lr=args.init_weight_lr, init_weight_momentum=args.init_weight_momentum, download_config=config.config_dict.datasets.download.weight)
 
-# create checkpoint callback
-checkpoint_callback = ModelCheckpoint(
-    monitor='train_loss',
-    dirpath=save_dir,
-    filename='model-{epoch:02d}-{train_loss:.2f}',
-    save_top_k=3,
-    mode='min',
-    save_last=1,
-)
+trainer = pl.Trainer(**config.train_config,
+callbacks=[
+    ModelCheckpoint(**config.config_dict.trainer.callbacks.ModelCheckpoint)
+],
+logger=[
+    # TensorBoardLogger(**config.config_dict.trainer.logger.TensorBoardLogger),
+    # CSVLogger(**config.config_dict.trainer.logger.CSVLogger),
+    WandbLogger(**config.config_dict.trainer.logger.WandbLogger)
+])
 
-trainer = pl.Trainer(
-    devices=-1,
-    # num_nodes=1,
-    # accelerator='cuda',
-    # strategy='ddp_cpu',
-    max_epochs=30,
-    # fast_dev_run=1,
-    # logger=[logger, logger2],
-    # log_every_n_steps=10,
-    # callbacks=[checkpoint_callback],
-    )
-
-# trainer.fit(model, data_module)
-
-print(checkpoint_callback.best_model_path)
+trainer.fit(model, data_module, ckpt_path=args.ckpt_path)

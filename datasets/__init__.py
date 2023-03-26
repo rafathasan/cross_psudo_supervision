@@ -1,0 +1,1 @@
+from .BingRGB import BingRGB

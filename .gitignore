@@ -1,5 +1,12 @@
 __*__/
 _*/
+data/
 lightning_logs/
 logs/
 outputs/
+checkpoints/
+pytorch-weight/
+.*/
+wandb/
+cps/
+*.zip

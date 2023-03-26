@@ -4,21 +4,24 @@ from torchvision import transforms
 from PIL import Image
 import os
 import numpy as np
+from dataclasses import dataclass
+from utils import DatasetDownloader
 
-train_path = "/src/data/_BingRGB/train"
-val_path = "/src/data/_BingRGB/val"
-test_path = "/src/data/_BingRGB/test"
+@dataclass
+class BingRGB(pl.LightningDataModule):
+    batch_size: int
+    download: dict
+    train_data_path: str
+    val_data_path: str
+    test_data_path: str
+    transforms: str
 
-class BDDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size, train_data_path = train_path, val_data_path = val_path, test_data_path = test_path):
+    def __post_init__(self):
         super().__init__()
-        self.train_data_path = train_data_path
-        self.val_data_path = val_data_path
-        self.test_data_path = test_data_path
-        self.batch_size = batch_size
 
     def prepare_data(self):
         # Use this method to perform any setup that requires downloading or preprocessing data.
+        DatasetDownloader(**self.download.data).download()
         pass
 
     def setup(self, stage=None):
@@ -41,13 +44,13 @@ class BDDataModule(pl.LightningDataModule):
         # Use this method to return a PyTorch DataLoader instance for the training dataset.
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)
 
-    # def val_dataloader(self):
-    #     # Use this method to return a PyTorch DataLoader instance for the validation dataset.
-    #     return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
+    def val_dataloader(self):
+        # Use this method to return a PyTorch DataLoader instance for the validation dataset.
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
-    # def test_dataloader(self):
-    #     # Use this method to return a PyTorch DataLoader instance for the test dataset.
-    #     return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
+    def test_dataloader(self):
+        # Use this method to return a PyTorch DataLoader instance for the test dataset.
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=8)
 
     def predict_dataloader(self):
         # Use this method to return a PyTorch DataLoader instance for the prediction dataset.
@@ -59,7 +62,7 @@ class BDDataModule(pl.LightningDataModule):
             # transforms.RandomHorizontalFlip(),
             # transforms.RandomCrop(224),
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            # transforms.Normalize(mean=[0.303, 0.313, 0.220], std=[0.108, 0.088, 0.075])
         ])
 
     def val_transforms(self):
@@ -89,15 +92,9 @@ class MyDataset(Dataset):
         # Get a list of image filenames in the data directory
         self.filenames = []
 
-
-        if self.unsup:
-            for filename in os.listdir(self.data_path):
-                if 'jpg' in filename:
-                    self.filenames.append(filename)
-        else:
-            for filename in os.listdir(self.data_path):
-                if 'jpg' in filename:
-                    self.filenames.append(filename)
+        for filename in os.listdir(self.data_path): # slicing large than test image will give error. if slice value > min(train_size, test_size) 
+            if 'gt' not in filename:
+                self.filenames.append(filename)
 
         if self.unsup:
             self.unsup_filenames, self.image_filenames = np.split(self.filenames, [int(len(self.filenames)*0.8)])
@@ -108,6 +105,10 @@ class MyDataset(Dataset):
 
     def __getitem__(self, index):
         # Load an image and its corresponding label, and apply the specified transforms (if any)
+        image_transform = transforms.Compose([
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
         if self.unsup:
             image_filename = self.image_filenames[index%len(self.image_filenames)]
             unsup_filename = self.unsup_filenames[index]
@@ -117,12 +118,14 @@ class MyDataset(Dataset):
             
             image = Image.open(image_path).convert('RGB')
             unsup = Image.open(unsup_path).convert('RGB')
-            mask = Image.open(image_path.replace('jpg','png')).convert('L')
+            mask = np.array(Image.open(image_path.replace('.png','_gt.png')).convert('L'))
 
             if self.transforms is not None:
                 image = self.transforms(image)
                 unsup = self.transforms(unsup)
-                mask = self.transforms(mask)
+                image = image_transform(image)
+                unsup = image_transform(unsup)
+                mask = self.transforms(mask)*255
 
             return unsup, image, mask.long()
 
@@ -131,10 +134,11 @@ class MyDataset(Dataset):
         image_path = os.path.join(self.data_path, image_filename)
         
         image = Image.open(image_path).convert('RGB')
-        mask = Image.open(image_path.replace('jpg','png')).convert('L')
+        mask = np.array(Image.open(image_path.replace('.png','_gt.png')).convert('L'))
 
         if self.transforms is not None:
             image = self.transforms(image)
-            mask = self.transforms(mask)
+            image = image_transform(image)
+            mask = self.transforms(mask)*255
 
         return image, mask.long()

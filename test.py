@@ -1,27 +1,31 @@
 import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-from data.BDDataModule import BDDataModule
+from datasets.BingRGB import BingRGB
 from models.TSS import TSS
 from pytorch_lightning.callbacks import ModelCheckpoint
+from torchsummary import summary
+import torch
+from utils import DatasetDownloader, Config
 
-model = TSS()
-data_module = BDDataModule(3)
+config = Config("./config/config.yaml")
 
-save_dir = "/src/outputs/"
+parser = argparse.ArgumentParser()
+parser.add_argument('-c','--ckpt_path', type=str, help='Path to checkpoint file', default=None)
+parser.add_argument('--init_weight_lr', type=float, help='The value for init_weight_lr.', default=1e-5)
+parser.add_argument('--init_weight_momentum', type=float, help='The value for init_weight_momentum.', default=0.9)
+parser.add_argument('--lr', type=float, help='The value for lr.', default=.0025)
+args = parser.parse_args()
 
-# create checkpoint callback
-checkpoint_callback = ModelCheckpoint(
-    monitor='train_loss',
-    dirpath=save_dir,
-    filename='model-{epoch:02d}-{train_loss:.2f}',
-    save_top_k=3,
-    mode='min'
-)
+data_module = BingRGB(**config.datasets_config)
 
-# checkpoint_callback.on_validation_end(trainer=None, pl_module=model)
-best_model_path = checkpoint_callback.best_model_path
-# best_model = TSS.load_from_checkpoint(best_model_path)
+model = TSS(lr=args.lr, init_weight_lr=args.init_weight_lr, init_weight_momentum=args.init_weight_momentum, download_config=config.config_dict.datasets.download.weight)
 
-print(best_model_path)
+trainer = pl.Trainer(**config.test_config,
+logger=[
+    CSVLogger(**config.config_dict.trainer.logger.CSVLogger),
+])
+
+trainer.test(model, data_module, ckpt_path=args.ckpt_path)
