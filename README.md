@@ -10,6 +10,7 @@ project_root/
 ├── data/
 │   ├── train/
 │   └── val/
+├── datasets/
 ├── models/
 ├── notebooks/
 ├── outputs/
@@ -17,10 +18,14 @@ project_root/
 ├── tests/
 ├── utils/
 ├── requirements.txt
-└── README.md
+├── README.md
+├── test.py
+└── train.py
 ```
 
 `data/`: This directory contains the training and validation data.
+
+`datasets/`: This directory contains the definition of the PyTorch data module used for the project.
 
 `models/`: This directory contains the definition of the PyTorch models used for the project.
 
@@ -35,6 +40,10 @@ project_root/
 `utils/`: This directory contains utility functions that can be reused across your project.
 
 `requirements.txt`: This file contains the list of Python packages required to run the project.
+
+`test.py`: This file is used to test the model performance.
+
+`train.py`: This file is used to train the model.
 
 Contributing
 Contributions are welcome! Please feel free to open a pull request or submit an issue if you find any bugs or have any suggestions.
