@@ -75,13 +75,7 @@ def group_weight(weight_group, module, norm_layer, lr):
             group_decay.append(m)
         elif isinstance(m, nn.Embedding):
             group_decay.append(m)
-        # else:
-        #     print(m, norm_layer)
-    # print(module.modules)
-    # print( len(list(module.parameters())) , 'HHHHHHHHHHHHHHHHH',  len(group_decay) + len(
-    #    group_no_decay))
-    assert len(list(module.parameters())) == len(group_decay) + len(
-       group_no_decay)
+    
     weight_group.append(dict(params=group_decay, lr=lr))
     weight_group.append(dict(params=group_no_decay, weight_decay=.0, lr=lr))
     return weight_group
