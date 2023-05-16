@@ -8,22 +8,6 @@ from functools import partial
 from collections import OrderedDict
 from models.base_model import resnet50
 
-class Network(pl.LightningModule):
-    def __init__(self, num_classes, norm_layer, pretrained_model=None):
-        super(Network, self).__init__()
-        self.branch1 = SingleNetwork(num_classes, norm_layer, pretrained_model)
-        self.branch2 = SingleNetwork(num_classes, norm_layer, pretrained_model)
-
-    def forward(self, data, step=1):
-        if not self.training:
-            pred1 = self.branch1(data)
-            return pred1
-
-        if step == 1:
-            return self.branch1(data)
-        elif step == 2:
-            return self.branch2(data)
-
 class SingleNetwork(pl.LightningModule):
     def __init__(self, num_classes, norm_layer, pretrained_model=None):
         super(SingleNetwork, self).__init__()
@@ -44,17 +28,17 @@ class SingleNetwork(pl.LightningModule):
         self.business_layer.append(self.classifier)
 
     def forward(self, data):
-        blocks = self.backbone(data)
-        v3plus_feature = self.head(blocks)      # (b, c, h, w)
-        b, c, h, w = v3plus_feature.shape
+        feature_maps = self.backbone(data)
+        v3plus_feature = self.head(feature_maps)      # (b, c, h, w)
+        # b, c, h, w = v3plus_feature.shape
 
         pred = self.classifier(v3plus_feature)
 
         b, c, h, w = data.shape
         pred = F.interpolate(pred, size=(h, w), mode='bilinear', align_corners=True)
 
-        if self.training:
-            return v3plus_feature, pred
+        # if self.training:
+        #     return v3plus_feature, pred
         return pred
 
     # @staticmethod
@@ -164,11 +148,10 @@ class Head(pl.LightningModule):
                                        nn.ReLU(),
                                        )
 
-    def forward(self, f_list):
-        f = f_list[-1]
+    def forward(self, feature_maps):
+        low_level_features, f = feature_maps
         f = self.aspp(f)
 
-        low_level_features = f_list[0]
         low_h, low_w = low_level_features.size(2), low_level_features.size(3)
         low_level_features = self.reduce(low_level_features)
 

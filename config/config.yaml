@@ -1,22 +1,23 @@
 
 datasets:
-  batch_size: 2
+  train_batch_size: 3
+  val_batch_size: 32
+  test_batch_size: 32
+  num_workers: 16
   download:
-    raw:
-      filename: BingRGB_raw.zip
-      source: https://iubedubd-my.sharepoint.com/:u:/g/personal/1731117_iub_edu_bd/EfHtUykBqFBDlBgTG9Noz5cBmv1tcWK7g52NSMdsgenhDQ?e=2q3yrB
-      extract_to: ./data/BingRGB/
     data:
       filename: BingRGB.zip
-      source: https://iubedubd-my.sharepoint.com/:u:/g/personal/1731117_iub_edu_bd/EUFzz7hu3gZHqaTDuHm791IB440iHaTfWFhxVpbcfZTmlg?e=UTy7mM
+      url: https://drive.google.com/file/d/1VTcCWjm-neMdLuTN96cVKGO7BravpVLt/view?usp=sharing
       extract_to: ./data/BingRGB/
     weight:
       filename: pytorch-weight.zip
-      source: https://iubedubd-my.sharepoint.com/:u:/g/personal/1731117_iub_edu_bd/ESLri6VtHrpMs6xLDC6zrdwBFNumLgR9--2KNUlJBfHDkQ?e=rrwIls
-      extract_to: ./data/
-  train_data_path: ./data/BingRGB/train
+      url: https://drive.google.com/file/d/1TGnQ67ZazG4B8fRsW8m313CylQ57Bl0F/view?usp=share_link
+      extract_to: ./data/pytorch-weight/
+  train_sup_data_path: ./data/BingRGB/train_sup
+  train_unsup_data_path: ./data/BingRGB/train_unsup
+  # train_data_path: ./data/BingRGB/train
   val_data_path: ./data/BingRGB/val
-  test_data_path: ./data/BingRGB/test
+  test_data_path: ./data/BingRGB/val
   transforms:
     train:
       - ToTensor
@@ -29,11 +30,13 @@ trainer:
     devices: -1
     num_nodes: 1
     accelerator: cuda
-    # strategy: ddp
-    max_epochs: 40
-    fast_dev_run: 1
-    # limit_train_batches: 50
-    # limit_val_batches: 20
+    strategy: auto
+    max_epochs: 50
+    sync_batchnorm: True
+    num_sanity_val_steps: 0
+    # fast_dev_run: 10
+    # limit_train_batches: 64
+    # limit_val_batches: 10
     log_every_n_steps: 10
   logger:
     TensorBoardLogger:
@@ -43,19 +46,21 @@ trainer:
       save_dir: logs/
       name: csv_cps
     WandbLogger:
-      project: "wb_cps"
+      project: "8th_cps"
       save_dir: logs/
+      name: slow_lightspeed
   callbacks:
     ModelCheckpoint: 
-      monitor: cps_loss
+      monitor: miou
       dirpath: ./checkpoints
-      filename: model-{epoch:02d}-{cps_loss:.2f}
-      save_top_k: 3
-      mode: min
+      filename: last-best-{epoch:02d}-{miou:.2f}
+      save_top_k: 5
+      mode: max
       save_last: True
+      verbose: True
+      # save_on_train_epoch_end: True
+      # every_n_epochs: 0
   test:
-    devices: -1
+    devices: 1
     num_nodes: 1
     accelerator: cuda
-    strategy: ddp
-    log_every_n_steps: 10

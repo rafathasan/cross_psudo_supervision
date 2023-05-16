@@ -1,4 +1,5 @@
 import functools
+import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 from utils.pyt_utils import load_model
@@ -171,17 +172,12 @@ class ResNet(pl.LightningModule):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        blocks = []
-        x = self.layer1(x);
-        blocks.append(x)
-        x = self.layer2(x);
-        blocks.append(x)
-        x = self.layer3(x);
-        blocks.append(x)
-        x = self.layer4(x);
-        blocks.append(x)
+        low_level_features = self.layer1(x)
+        x = self.layer2(low_level_features)
+        x = self.layer3(x)
+        features = self.layer4(x)
 
-        return blocks
+        return low_level_features, features
 
 
 def resnet18(pretrained_model=None, **kwargs):

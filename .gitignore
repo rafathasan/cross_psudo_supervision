@@ -2,11 +2,13 @@ __*__/
 _*/
 data/
 lightning_logs/
-logs/
+logs*
 outputs/
-checkpoints/
+checkpoints*
 pytorch-weight/
 .*/
 wandb/
 cps/
 *.zip
+notebooks/
+tmp/

@@ -1,3 +1,6 @@
+from PIL import Image
+import numpy as np
+
 # original 11 class map
 # class_map = {(0, 0, 0):      0, # bg
 #             (0, 255, 0):     1, # farmland
@@ -26,8 +29,16 @@ class_map = {(0, 0, 0):      0,  # bg
             }
 
 def encode_bw_mask(rgb_mask, class_map=class_map):
-    import numpy as np
-    from PIL import Image
+    """
+    Encode a PIL Image object containing a RGB mask into a binary mask with class labels.
+
+    Parameters: 
+    rgb_mask (PIL Image): An image object containing the RGB mask. 
+    class_map (dict): A dictionary mapping RGB values to class labels. Keys should be tuples of length 3 and values should be integers. 
+
+    Returns: 
+    bw_mask (PIL Image): A binary mask with class labels. 
+    """
     # Check if the object is a PIL Image object
     assert isinstance(rgb_mask, Image.Image), "Object is not a PIL Image"
     # Check that all keys are tuples of length 3

@@ -1,2 +1,2 @@
 from .config import Config
-from .data import DatasetDownloader
+from .data import download_data
