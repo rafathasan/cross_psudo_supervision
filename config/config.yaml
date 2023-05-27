@@ -29,7 +29,7 @@ trainer:
     devices: -1
     num_nodes: 1
     accelerator: cuda
-    strategy: auto
+    strategy: ddp
     max_epochs: 100
     sync_batchnorm: True
     num_sanity_val_steps: 0
