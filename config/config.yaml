@@ -1,8 +1,8 @@
 
 datasets:
   train_batch_size: 3
-  val_batch_size: 32
-  test_batch_size: 32
+  val_batch_size: 4
+  test_batch_size: 4
   num_workers: 16
   download:
     data:
@@ -15,7 +15,6 @@ datasets:
       extract_to: ./data/pytorch-weight/
   train_sup_data_path: ./data/BingRGB/train_sup
   train_unsup_data_path: ./data/BingRGB/train_unsup
-  # train_data_path: ./data/BingRGB/train
   val_data_path: ./data/BingRGB/val
   test_data_path: ./data/BingRGB/val
   transforms:
@@ -31,11 +30,11 @@ trainer:
     num_nodes: 1
     accelerator: cuda
     strategy: auto
-    max_epochs: 50
+    max_epochs: 100
     sync_batchnorm: True
     num_sanity_val_steps: 0
     # fast_dev_run: 10
-    # limit_train_batches: 64
+    # limit_train_batches: 10
     # limit_val_batches: 10
     log_every_n_steps: 10
   logger:
