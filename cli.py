@@ -21,8 +21,8 @@ def cli():
     pass
 
 @cli.command()
-@click.option('--project-name', type=str, default="cps")
-@click.option('--lr', default=0.0025, help='Learning rate')
+@click.option('--project-name', type=str, default="TSS")
+@click.option('--lr', default=0.01, help='Learning rate')
 @click.option('--wandb-key', type=str, default=os.getenv('WANDB_KEY'))
 @click.option('--model-path', type=str, default='./checkpoints/last.ckpt')
 @click.option('--save-dir', type=str, default='./checkpoints')
@@ -54,7 +54,7 @@ def train(project_name, lr, wandb_key, model_path, save_dir, log_dir, config_pat
     logger=[
         # TensorBoardLogger(**config.config_dict.trainer.logger.TensorBoardLogger),
         CSVLogger(name=project_name, save_dir=log_dir),
-        WandbLogger(project="8th_cps", name=project_name, save_dir=log_dir),
+        WandbLogger(project=project_name, save_dir=log_dir),
     ])
 
     trainer.fit(model, data_module, ckpt_path=model_path)
