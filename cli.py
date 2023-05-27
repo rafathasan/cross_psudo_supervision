@@ -21,7 +21,7 @@ def cli():
     pass
 
 @cli.command()
-@click.option('--project-name', type=str, default="TSS")
+@click.option('--project-name', type=str, default="TSS8")
 @click.option('--lr', default=0.01, help='Learning rate')
 @click.option('--wandb-key', type=str, default=os.getenv('WANDB_KEY'))
 @click.option('--model-path', type=str, default='./checkpoints/last.ckpt')
