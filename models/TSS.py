@@ -115,15 +115,14 @@ class TSS(pl.LightningModule):
         preds = torch.argmax(pred_sup_l, dim=1)
 
         batch_miou, batch_iou_per_class, batch_pixel_counts = calculate_iou(preds, gts, self.num_classes)
-        batch_f1, batch_f1_per_class, batch_f1_pixel_counts = calculate_f1_score(preds, gts, self.num_classes)
+        # batch_f1, batch_f1_per_class, batch_f1_pixel_counts = calculate_f1_score(preds, gts, self.num_classes)
 
         # self.append_to_wandb_table(imgs, gts, preds)
         
         # Log to wandb
-        self.log("miou", batch_miou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log("f1", batch_f1, on_step=False, on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-        self.log("val_loss", loss_sup, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log("lr", self.current_lr, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("miou", batch_miou, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("val_loss", loss_sup, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("lr", self.current_lr, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
     def log_confusion_matrix(self, cm):
         for i in range(self.num_classes):
