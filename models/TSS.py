@@ -120,9 +120,9 @@ class TSS(pl.LightningModule):
         # self.append_to_wandb_table(imgs, gts, preds)
         
         # Log to wandb
-        self.log("miou", batch_miou, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log("val_loss", loss_sup, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log("lr", self.current_lr, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("miou", batch_miou, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("val_loss", loss_sup, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("lr", self.current_lr, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
     def log_confusion_matrix(self, cm):
         for i in range(self.num_classes):
@@ -195,8 +195,8 @@ class TSS(pl.LightningModule):
                                 momentum=0.1,
                                 weight_decay=1e-4)
 
-        scheduler_l = OneCycleLR(optimizer_l, max_lr=self.hparams.lr, total_steps=30, anneal_strategy = 'cos', verbose=True)
-        scheduler_r = OneCycleLR(optimizer_r, max_lr=self.hparams.lr, total_steps=30, anneal_strategy = 'cos')
+        scheduler_l = OneCycleLR(optimizer_l, pct_start=.05, max_lr=self.hparams.lr, total_steps=30, anneal_strategy = 'cos', verbose=True)
+        scheduler_r = OneCycleLR(optimizer_r, pct_start=.05, max_lr=self.hparams.lr, total_steps=30, anneal_strategy = 'cos')
 
         return [optimizer_l, optimizer_r], [scheduler_l, scheduler_r]
     
