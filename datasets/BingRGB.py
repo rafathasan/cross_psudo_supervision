@@ -6,6 +6,8 @@ import os
 import numpy as np
 from dataclasses import dataclass
 from utils import download_data
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 @dataclass
 class BingRGB(pl.LightningDataModule):
@@ -62,30 +64,33 @@ class BingRGB(pl.LightningDataModule):
 
     def train_transforms(self):
         # Use this method to return a list of data augmentations to apply to the training data.
-        return transforms.Compose([
-            # transforms.RandomHorizontalFlip(),
-            # transforms.RandomCrop(224),
-            transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.303, 0.313, 0.220], std=[0.108, 0.088, 0.075])
-        ])
+        return A.Compose([
+            A.RandomResizedCrop(513, 513, scale=(0.3, 0.5), interpolation=1, p=0.5),
+            A.HorizontalFlip(p=0.5),
+            A.Rotate(limit=35, p=0.5),
+            A.OneOf([
+                A.GaussianBlur(blur_limit=(7, 9)),
+                A.GaussNoise(var_limit=(100.0, 200.0)),
+                A.ColorJitter(brightness=0.2, contrast=0.2),
+            ], p=0.5),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ], additional_targets={'image': 'image', 'image2': 'image', 'mask': 'mask'})
 
     def val_transforms(self):
         # Use this method to return a list of data augmentations to apply to the validation data.
-        return transforms.Compose([
-            # transforms.Resize(256),
-            # transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
+        return A.Compose([
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ], additional_targets={'image': 'image', 'mask': 'mask'})
 
     def test_transforms(self):
         # Use this method to return a list of data augmentations to apply to the test data.
-        return transforms.Compose([
-            # transforms.Resize(256),
-            # transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
+        return A.Compose([
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ], additional_targets={'image': 'image', 'mask': 'mask'})
+
 @dataclass
 class MyDataset(Dataset):
     sup_data_path: str
@@ -118,24 +123,30 @@ class MyDataset(Dataset):
 
         image_path = os.path.join(self.sup_data_path, image_filename)
         
-        image = Image.open(image_path).convert('RGB')
+        image = np.array(Image.open(image_path).convert('RGB'))
         mask = np.array(Image.open(image_path.replace('.png','_gt.png')).convert('L'))
-
-        if self.transforms is not None:
-            image = self.transforms(image)
-            image = image_transform(image)
-            mask = self.transforms(mask)*255
         
-        image[:,(mask == 0).squeeze()] = 0
 
         if self.unsup_data_path:
             unsup_filename = self.unsup_filenames[index%len(self.unsup_filenames)]
             unsup_path = os.path.join(self.unsup_data_path, unsup_filename)
-            unsup = Image.open(unsup_path).convert('RGB')
+            unsup = np.array(Image.open(unsup_path).convert('RGB'))
+
             if self.transforms is not None:
-                unsup = self.transforms(unsup)
-                unsup = image_transform(unsup)
+                transformed = self.transforms(image=image, image2=unsup, mask=mask)
+                image = transformed['image']
+                unsup = transformed['image2']
+                mask = transformed['mask']
+
+            image[:,(mask == 0).squeeze()] = 0
 
             return unsup, image, mask.long()
+
+        if self.transforms is not None:
+            transformed = self.transforms(image=image, mask=mask)
+            image = transformed['image']
+            mask = transformed['mask']
+        
+        image[:,(mask == 0).squeeze()] = 0
 
         return image, mask.long()
