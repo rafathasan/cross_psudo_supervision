@@ -4,7 +4,7 @@ import wandb
 import pytorch_lightning as pl
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import LambdaLR, StepLR, ReduceLROnPlateau
+from torch.optim.lr_scheduler import LambdaLR, StepLR, ReduceLROnPlateau, OneCycleLR
 from utils.init_func import init_weight, group_weight
 from torch.nn import SyncBatchNorm, BatchNorm2d
 import torchvision
@@ -120,10 +120,10 @@ class TSS(pl.LightningModule):
         # self.append_to_wandb_table(imgs, gts, preds)
         
         # Log to wandb
-        self.log("miou", batch_miou, on_step=False, on_epoch=True, prog_bar=True, logger=False, sync_dist=True)
-        self.log("f1", batch_f1, on_step=False, on_epoch=True, prog_bar=False, logger=False, sync_dist=True)
-        self.log("val_loss", loss_sup, on_step=False, on_epoch=True, prog_bar=True, logger=False, sync_dist=True)
-        self.log("lr", self.current_lr, on_step=False, on_epoch=True, prog_bar=True, logger=False, sync_dist=True)
+        self.log("miou", batch_miou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("f1", batch_f1, on_step=False, on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
+        self.log("val_loss", loss_sup, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("lr", self.current_lr, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
     def log_confusion_matrix(self, cm):
         for i in range(self.num_classes):
@@ -174,30 +174,30 @@ class TSS(pl.LightningModule):
         params_list_l = []
         
         params_list_l = group_weight(params_list_l, self.branch1.backbone,
-                               self.BatchNorm, self.lr)
+                               self.BatchNorm, self.hparams.lr)
         for module in self.branch1.business_layer:
-            params_list_l = group_weight(params_list_l, module, self.BatchNorm, self.lr)
+            params_list_l = group_weight(params_list_l, module, self.BatchNorm, self.hparams.lr)
 
         optimizer_l = torch.optim.SGD(
                                 params_list_l,
-                                lr=self.lr,
+                                lr=self.hparams.lr,
                                 momentum=0.1,
                                 weight_decay=1e-4)
 
         params_list_r = []
         params_list_r = group_weight(params_list_r, self.branch2.backbone,
-                               self.BatchNorm, self.lr)
+                               self.BatchNorm, self.hparams.lr)
         for module in self.branch2.business_layer:
-            params_list_r = group_weight(params_list_r, module, self.BatchNorm, self.lr)
+            params_list_r = group_weight(params_list_r, module, self.BatchNorm, self.hparams.lr)
 
         optimizer_r = torch.optim.SGD(
                                 params_list_r,
-                                lr=self.lr,
+                                lr=self.hparams.lr,
                                 momentum=0.1,
                                 weight_decay=1e-4)
 
-        scheduler_l = StepLR(optimizer_l, step_size=1, gamma=0.5)
-        scheduler_r = StepLR(optimizer_r, step_size=1, gamma=0.5)
+        scheduler_l = OneCycleLR(optimizer_l, max_lr=self.hparams.lr, total_steps=30, anneal_strategy = 'cos', verbose=True)
+        scheduler_r = OneCycleLR(optimizer_r, max_lr=self.hparams.lr, total_steps=30, anneal_strategy = 'cos')
 
         return [optimizer_l, optimizer_r], [scheduler_l, scheduler_r]
     
